@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "myvit"
+version = "0.1.0"
+description = "A small, educational Vision Transformer implementation."
+requires-python = ">=3.10"
+dependencies = [
+    "torch>=2.2",
+]
+
+[project.optional-dependencies]
+test = [
+    "pytest>=8.0",
+]
+
+[project.scripts]
+myvit-train-debug = "myvit.debug_training:main"
+myvit-inspect-checkpoint = "myvit.inspect_checkpoint:main"
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]

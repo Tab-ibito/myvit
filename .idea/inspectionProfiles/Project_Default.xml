@@ -1,0 +1,76 @@
+<component name="InspectionProjectProfileManager">
+  <profile version="1.0">
+    <option name="myName" value="Project Default" />
+    <inspection_tool class="PyPackageRequirementsInspection" enabled="true" level="WARNING" enabled_by_default="true">
+      <option name="ignoredPackages">
+        <list>
+          <option value="numpy" />
+          <option value="attrs" />
+          <option value="backcall" />
+          <option value="bleach" />
+          <option value="certifi" />
+          <option value="chardet" />
+          <option value="colorama" />
+          <option value="cycler" />
+          <option value="Cython" />
+          <option value="decorator" />
+          <option value="defusedxml" />
+          <option value="entrypoints" />
+          <option value="future" />
+          <option value="gitdb2" />
+          <option value="GitPython" />
+          <option value="idna" />
+          <option value="ipykernel" />
+          <option value="ipython" />
+          <option value="ipython-genutils" />
+          <option value="ipywidgets" />
+          <option value="imageio" />
+          <option value="jedi" />
+          <option value="Jinja2" />
+          <option value="jsonschema" />
+          <option value="jupyter" />
+          <option value="jupyter-client" />
+          <option value="jupyter-console" />
+          <option value="jupyter-core" />
+          <option value="jupyterlab" />
+          <option value="jupyterlab-server" />
+          <option value="kiwisolver" />
+          <option value="MarkupSafe" />
+          <option value="matplotlib" />
+          <option value="mistune" />
+          <option value="nbconvert" />
+          <option value="nbdime" />
+          <option value="nbformat" />
+          <option value="notebook" />
+          <option value="pandocfilters" />
+          <option value="parso" />
+          <option value="pexpect" />
+          <option value="pickleshare" />
+          <option value="Pillow" />
+          <option value="prometheus-client" />
+          <option value="prompt-toolkit" />
+          <option value="ptyprocess" />
+          <option value="Pygments" />
+          <option value="pyparsing" />
+          <option value="pyrsistent" />
+          <option value="python-dateutil" />
+          <option value="pyzmq" />
+          <option value="qtconsole" />
+          <option value="requests" />
+          <option value="scipy" />
+          <option value="Send2Trash" />
+          <option value="six" />
+          <option value="smmap2" />
+          <option value="terminado" />
+          <option value="testpath" />
+          <option value="tornado" />
+          <option value="traitlets" />
+          <option value="urllib3" />
+          <option value="wcwidth" />
+          <option value="webencodings" />
+          <option value="widgetsnbextension" />
+        </list>
+      </option>
+    </inspection_tool>
+  </profile>
+</component>
