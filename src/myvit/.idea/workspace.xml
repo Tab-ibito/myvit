@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ChangeListManager">
+    <list default="true" id="a08334f0-69bb-40e3-8dd9-ab32767d7b14" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/../../.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/../../.gitignore" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../README.md" beforeDir="false" afterPath="$PROJECT_DIR$/../../README.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../docs/experiments.md" beforeDir="false" afterPath="$PROJECT_DIR$/../../docs/experiments.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../pyproject.toml" beforeDir="false" afterPath="$PROJECT_DIR$/../../pyproject.toml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/debug_training.py" beforeDir="false" afterPath="$PROJECT_DIR$/debug_training.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/outputs/debug/best.pt" beforeDir="false" afterPath="$PROJECT_DIR$/outputs/debug/best.pt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/outputs/debug/last.pt" beforeDir="false" afterPath="$PROJECT_DIR$/outputs/debug/last.pt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/outputs/debug/metrics.jsonl" beforeDir="false" afterPath="$PROJECT_DIR$/outputs/debug/metrics.jsonl" afterDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$/../.." />
+  </component>
+  <component name="ProjectColorInfo"><![CDATA[{
+  "associatedIndex": 2
+}]]></component>
+  <component name="ProjectId" id="3ImFielH3NefexEMUYtWRAx0AQo" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "ModuleVcsDetector.initialDetectionPerformed": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.git.unshallow": "true",
+    "RunOnceActivity.typescript.service.memoryLimit.init": "true",
+    "git-widget-placeholder": "dev",
+    "last_opened_file_path": "F:/myvit/src/myvit",
+    "nodejs_package_manager_path": "npm",
+    "vue.rearranger.settings.migration": "true"
+  }
+}]]></component>
+  <component name="SharedIndexes">
+    <attachedChunks>
+      <set>
+        <option value="bundled-js-predefined-d6986cc7102b-9b0f141eb926-JavaScript-PY-253.29346.142" />
+        <option value="bundled-python-sdk-f2b7a9f6281b-6e1f45a539f7-com.jetbrains.pycharm.pro.sharedIndexes.bundled-PY-253.29346.142" />
+      </set>
+    </attachedChunks>
+  </component>
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="a08334f0-69bb-40e3-8dd9-ab32767d7b14" name="Changes" comment="" />
+      <created>1788361965626</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1788361965626</updated>
+      <workItem from="1788361966692" duration="29000" />
+    </task>
+    <servers />
+  </component>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="3" />
+  </component>
+</project>

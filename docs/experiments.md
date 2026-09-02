@@ -38,3 +38,38 @@ for epoch in range(num_epochs):
 
 通过 debug 工具观察上述过程中部分梯度矩阵，张量形状等变化。
 
+## 3. 训练一个小模型
+
+在 `src/myvit/tiny_training.py` 的配置中:
+
+```Python
+def create_tiny_model() -> VisionTransformer:
+    return VisionTransformer (
+        image_size=224,
+        patch_size = 16,
+        embed_dim = 192,
+        depth = 12,
+        num_heads = 3,
+        num_classes = 1000,
+    )
+```
+
+数据集是 `data/imagenette2-320`，在小样本内有10个分类的若干图片，训练集与测试集分开。
+
+学习率采用余弦衰减优化，梯度更新采用 `AdamW` 方法。
+
+训练50轮，并通过 AI 生成的可视化辅助脚本得到
+
+![alt text](training_curves.png)
+
+显示准确度只有25%左右，基本确定模型是**欠拟合**。
+
+初步猜测原因在 `num_classes = 1000` 输出维度是1000，但是实际上只使用了10个维度，但是未必是原因所在：**落在剩下类别当中**的频率显然会被修正。
+
+将 `num_classes` 修改后再尝试将学习率调整成 `1e-2` 重新运行，训练轮数10轮。得到 26.68% 的准确率。
+
+仍然可能是欠拟合，因此先不对 Scheduler 加衰减策略；先采用 StepRL；训练10轮，得到 17.22%。说明该学习率过大。
+
+改为 `1e-4` 后达到了 67.57% 的效果。通过调参过程可以知道，**学习率大小是一个重要因素**。
+
+![alt text](training_curves-1.png)
