@@ -46,8 +46,11 @@ def make_pattern_dataset(
     if num_classes != 4:
         raise ValueError("当前调试数据固定为 4 个象限类别")
 
+    # 使用独立 Generator，不改变训练中 DataLoader shuffle 等其他随机过程的状态。
     generator = torch.Generator().manual_seed(seed)
     images = torch.randn(samples, 3, image_size, image_size, generator=generator) * 0.05
+
+    # 标签按 0,1,2,3 循环分配，保证类别数量尽量均衡。
     targets = torch.arange(samples) % num_classes
 
     square_size = image_size // 3
@@ -58,6 +61,7 @@ def make_pattern_dataset(
         (image_size - square_size - 2, image_size - square_size - 2),
     )
 
+    # 除象限外再改变颜色通道，让任务同时包含空间和颜色线索。
     for index, target in enumerate(targets.tolist()):
         top, left = offsets[target]
         channel = target % 3
@@ -69,6 +73,8 @@ def make_pattern_dataset(
 def create_debug_model() -> VisionTransformer:
     """创建快速调试用的迷你 ViT；模块结构与 ViT-Tiny 完全相同。"""
 
+    # 这里缩小分辨率、宽度和深度只是为了让 CPU 测试更快；PatchEmbedding、
+    # Attention、Transformer Block、CLS Token 和分类头与 ViT-Tiny 使用同一份实现。
     return VisionTransformer(
         image_size=32,
         patch_size=8,
@@ -118,6 +124,7 @@ def main() -> None:
     args = build_parser().parse_args()
     set_random_seed(args.seed)
 
+    # 自动优先使用 CUDA；本调试任务也应能在没有显卡的开发电脑上完成。
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model = create_debug_model().to(device)
     criterion = nn.CrossEntropyLoss()
@@ -126,21 +133,26 @@ def main() -> None:
         lr=args.learning_rate,
         weight_decay=0.01,
     )
+    # T_max 表示余弦曲线从初始学习率衰减到最低点所经历的 epoch 数。
+    # scheduler.step() 每个 epoch 调用一次，因此这里设置为总 epoch 数。
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
         optimizer,
         T_max=max(args.epochs, 1),
     )
 
+    # 训练集需要 shuffle，避免每轮都按相同类别顺序更新参数。
     train_loader = DataLoader(
         make_pattern_dataset(64, seed=args.seed),
         batch_size=args.batch_size,
         shuffle=True,
     )
+    # 验证集使用不同随机种子生成独立噪声，但类别规律相同；不 shuffle 便于复现。
     validation_loader = DataLoader(
         make_pattern_dataset(32, seed=args.seed + 1),
         batch_size=args.batch_size,
     )
 
+    # -inf 保证一个全新的实验在第一轮结束后一定会生成 best.pt。
     start_epoch = 0
     best_top1 = float("-inf")
     if args.resume is not None:
@@ -151,6 +163,7 @@ def main() -> None:
             scheduler=scheduler,
             map_location=device,
         )
+        # checkpoint 中 epoch 表示“最近已完成”的轮次，所以从下一轮继续。
         start_epoch = metadata.epoch + 1
         best_top1 = (
             metadata.best_metric
@@ -165,6 +178,8 @@ def main() -> None:
         # 新实验覆盖旧历史；只有 --resume 时才会继续追加。
         history_path.write_text("", encoding="utf-8")
 
+    # stop-after-epoch 只用于演示中断；scheduler 的总周期仍保持 args.epochs，
+    # 因而用相同 --epochs 恢复时学习率曲线能与不中断训练保持一致。
     end_epoch = args.epochs
     if args.stop_after_epoch is not None:
         end_epoch = min(end_epoch, args.stop_after_epoch + 1)
@@ -185,6 +200,8 @@ def main() -> None:
             device,
         )
 
+        # 使用严格大于：准确率打平时保留第一次达到最佳值的 checkpoint。
+        # 正式实验也可以增加“Top-1 相同则比较 val_loss”的次级规则。
         is_best = validation_metrics.top1 > best_top1
         best_top1 = max(best_top1, validation_metrics.top1)
         metrics = {
@@ -218,6 +235,7 @@ def main() -> None:
                 extra={"seed": args.seed},
             )
 
+        # JSONL 每行是一个独立 JSON 对象。即使 checkpoint 被覆盖，完整曲线仍会保留。
         with history_path.open("a", encoding="utf-8") as history_file:
             history_file.write(
                 json.dumps(

@@ -12,11 +12,14 @@ from myvit.engine import evaluate, train_one_epoch
 
 
 def test_training_reports_finite_metrics_and_updates_parameters() -> None:
+    """确认训练指标有效，且一次 epoch 确实更新了分类头参数。"""
+
     torch.manual_seed(0)
     model = create_debug_model()
     criterion = nn.CrossEntropyLoss()
     optimizer = torch.optim.AdamW(model.parameters(), lr=3e-3)
     loader = DataLoader(make_pattern_dataset(16, seed=0), batch_size=8)
+    # clone 保存训练前快照；只保存引用会随原参数一起变化，无法用于比较。
     before = model.head.weight.detach().clone()
 
     metrics = train_one_epoch(
@@ -37,6 +40,8 @@ def test_training_reports_finite_metrics_and_updates_parameters() -> None:
 
 
 def test_evaluate_does_not_create_gradients() -> None:
+    """验证循环应只读模型，不能留下任何参数梯度。"""
+
     model = create_debug_model()
     criterion = nn.CrossEntropyLoss()
     loader = DataLoader(make_pattern_dataset(8, seed=1), batch_size=4)
@@ -51,6 +56,8 @@ def test_evaluate_does_not_create_gradients() -> None:
 def test_checkpoint_round_trip_restores_model_and_training_state(
     tmp_path: Path,
 ) -> None:
+    """保存后恢复，模型、优化器、scheduler 和元数据都应完全一致。"""
+
     torch.manual_seed(0)
     model = create_debug_model()
     optimizer = torch.optim.AdamW(model.parameters(), lr=1e-3)
@@ -75,6 +82,7 @@ def test_checkpoint_round_trip_restores_model_and_training_state(
         extra={"experiment": "unit-test"},
     )
 
+    # 故意为新优化器设置不同学习率；成功加载后它应被 checkpoint 中的值覆盖。
     restored_model = create_debug_model()
     restored_optimizer = torch.optim.AdamW(restored_model.parameters(), lr=9e-3)
     restored_scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
