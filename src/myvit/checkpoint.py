@@ -36,6 +36,8 @@ def inspect_checkpoint(
     以及优化器/调度器状态是否齐全。只应检查来源可信的 checkpoint 文件。
     """
 
+    # inspect 只读取由张量和基础 Python 类型组成的状态字典，不执行模型构造。
+    # weights_only=True 缩小了反序列化范围，但仍只应打开可信来源的文件。
     payload = torch.load(path, map_location=map_location, weights_only=True)
     return {
         "format_version": payload.get("format_version"),
@@ -71,6 +73,8 @@ def save_checkpoint(
     checkpoint_path.parent.mkdir(parents=True, exist_ok=True)
     temporary_path = checkpoint_path.with_suffix(checkpoint_path.suffix + ".tmp")
 
+    # state_dict 只描述状态，不保存 Python 模型类本身。因此加载时仍需先创建同结构模型。
+    # format_version 用于未来 checkpoint 字段发生变化时做兼容判断。
     payload = {
         "format_version": 1,
         "epoch": epoch,
@@ -86,6 +90,7 @@ def save_checkpoint(
     }
 
     try:
+        # 不直接写 checkpoint_path：若进程在写入中途被杀，旧 checkpoint 仍然完好。
         torch.save(payload, temporary_path)
         os.replace(temporary_path, checkpoint_path)
     finally:
@@ -110,6 +115,8 @@ def load_checkpoint(
     """
 
     checkpoint_path = Path(path)
+    # map_location 决定状态张量首先加载到哪里。CPU 推理通常使用 "cpu"；
+    # GPU 续训可直接传训练 device，避免 optimizer 状态留在 CPU。
     payload = torch.load(checkpoint_path, map_location=map_location, weights_only=False)
 
     required_keys = {"format_version", "epoch", "model_state", "metrics"}
@@ -119,8 +126,12 @@ def load_checkpoint(
     if payload["format_version"] != 1:
         raise ValueError(f"不支持的 checkpoint 版本：{payload['format_version']}")
 
+    # strict=True 要求 checkpoint 与当前模型的参数名完全一致，最适合可靠续训。
+    # 迁移学习时如果更换分类头，可以显式选择 strict=False，并检查缺失/多余参数。
     model.load_state_dict(payload["model_state"], strict=strict)
 
+    # 只做推理时调用方不会传 optimizer/scheduler/scaler，因此只恢复模型即可。
+    # 继续训练时三者应与模型一起恢复，否则学习率和 AdamW 动量会从头开始。
     if optimizer is not None and payload.get("optimizer_state") is not None:
         optimizer.load_state_dict(payload["optimizer_state"])
     if scheduler is not None and payload.get("scheduler_state") is not None:

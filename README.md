@@ -13,11 +13,7 @@
 
 ## 项目 Python
 
-项目统一使用：
-
-```text
-C:\Users\Fwk\AppData\Local\Programs\Python\Python311\python.exe
-```
+项目统一使用本地 Python 路径。
 
 VS Code 已在 `.vscode/settings.json` 中配置该解释器。
 
@@ -26,16 +22,12 @@ VS Code 已在 `.vscode/settings.json` 中配置该解释器。
 在 PowerShell 中执行：
 
 ```powershell
-$projectPython = 'C:\Users\Fwk\AppData\Local\Programs\Python\Python311\python.exe'
-$env:PYTHONPATH = 'F:\myvit\src'
 & $projectPython -m pytest -q
 ```
 
 ## 运行调试训练
 
 ```powershell
-$projectPython = 'C:\Users\Fwk\AppData\Local\Programs\Python\Python311\python.exe'
-$env:PYTHONPATH = 'F:\myvit\src'
 & $projectPython -m myvit.debug_training --epochs 15 --output-dir outputs/debug
 ```
 

@@ -21,6 +21,7 @@ class EpochMetrics:
     因而 75.2 表示 75.2%，而不是 0.752。
     """
 
+    # 验证阶段没有学习率和梯度，因此后两项允许为 None。
     loss: float
     top1: float
     top5: float
@@ -56,13 +57,19 @@ def topk_correct_counts(
     if not topk or any(k <= 0 for k in topk):
         raise ValueError("topk 必须包含正整数")
 
+    # logits 保存的是未经 softmax 的分类分数。这里只比较大小关系，
+    # softmax 不会改变排序，所以无需额外计算概率。
     num_classes = logits.shape[1]
     max_k = min(max(topk), num_classes)
 
     # predicted 的形状为 [B, max_k]，每行按置信度从高到低排列类别下标。
     predicted = logits.topk(max_k, dim=1, largest=True, sorted=True).indices
+
+    # targets.unsqueeze(1) 将 [B] 变成 [B, 1]，广播后可同时与多个候选类别比较。
+    # correct[b, k] 表示第 b 个样本的第 k 个候选是否命中真实类别。
     correct = predicted.eq(targets.unsqueeze(1))
 
+    # any(dim=1) 把“前 k 个候选中是否至少命中一次”压缩为每个样本一个布尔值。
     return [
         int(correct[:, : min(k, num_classes)].any(dim=1).sum().item())
         for k in topk
@@ -87,6 +94,8 @@ class ClassificationMetricTracker:
         batch_size = targets.shape[0]
         top1_correct, top5_correct = topk_correct_counts(logits, targets)
 
+        # loss.detach() 避免指标对象意外持有整张反向传播计算图；item() 把标量移到 CPU。
+        # 这里保存的是 loss 总和而非 batch 均值的均值，可正确处理不足一个 batch 的尾批次。
         self.loss_sum += float(loss.detach().item()) * batch_size
         self.top1_correct += top1_correct
         self.top5_correct += top5_correct
@@ -103,6 +112,7 @@ class ClassificationMetricTracker:
         if self.samples == 0:
             raise ValueError("无法从空 DataLoader 计算训练指标")
 
+        # accuracy 在内部使用“正确样本数 / 总样本数”，最终乘 100 转为百分数。
         return EpochMetrics(
             loss=self.loss_sum / self.samples,
             top1=100.0 * self.top1_correct / self.samples,
@@ -120,6 +130,8 @@ def parameters_gradient_norm(parameters: Iterable[Tensor]) -> float:
     ``parameters`` 通常传入 ``model.parameters()``。
     """
 
+    # ||g||_2 = sqrt(sum_i(g_i^2))。使用 float64 累加，降低大量参数求和时的误差。
+    # 累加器放在 CPU，避免仅为日志统计而长期占用 GPU 张量。
     squared_norm = torch.zeros((), dtype=torch.float64)
     has_gradient = False
 
@@ -127,6 +139,7 @@ def parameters_gradient_norm(parameters: Iterable[Tensor]) -> float:
         if parameter.grad is None:
             continue
         has_gradient = True
+        # 某些被冻结或未参与本轮计算的参数 grad 为 None，应跳过而不是当成异常。
         gradient = parameter.grad.detach()
         squared_norm += gradient.double().pow(2).sum().cpu()
 
