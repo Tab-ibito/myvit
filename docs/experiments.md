@@ -73,8 +73,6 @@ def create_tiny_model() -> VisionTransformer:
 改为 `1e-4` 后达到了 67.57% 的效果。通过调参过程可以知道，**学习率大小是一个重要因素**。
 
 ![alt text](training_curves-1.png)
-=======
-![alt text](training_curves-1.png)
 
 改为50轮次，前5轮采用固定步长 Warmup, 后45轮用余弦衰减；在43轮时得到最优结果 77.38%。（在下文对照试验中得到 75.75%）
 
@@ -97,4 +95,3 @@ torch.cosine_similarity(tokens[0], tokens[1])
 ![alt text](training_curves-3.png)
 
 仍然没有明显提升。
->>>>>>> Stashed changes
