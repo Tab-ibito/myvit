@@ -2,11 +2,15 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="a08334f0-69bb-40e3-8dd9-ab32767d7b14" name="Changes" comment="">
+<<<<<<< Updated upstream
       <change beforePath="$PROJECT_DIR$/../../.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/../../.gitignore" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/../../README.md" beforeDir="false" afterPath="$PROJECT_DIR$/../../README.md" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/../../docs/experiments.md" beforeDir="false" afterPath="$PROJECT_DIR$/../../docs/experiments.md" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/../../pyproject.toml" beforeDir="false" afterPath="$PROJECT_DIR$/../../pyproject.toml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/debug_training.py" beforeDir="false" afterPath="$PROJECT_DIR$/debug_training.py" afterDir="false" />
+=======
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+>>>>>>> Stashed changes
       <change beforePath="$PROJECT_DIR$/outputs/debug/best.pt" beforeDir="false" afterPath="$PROJECT_DIR$/outputs/debug/best.pt" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/outputs/debug/last.pt" beforeDir="false" afterPath="$PROJECT_DIR$/outputs/debug/last.pt" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/outputs/debug/metrics.jsonl" beforeDir="false" afterPath="$PROJECT_DIR$/outputs/debug/metrics.jsonl" afterDir="false" />
@@ -30,10 +34,19 @@
   <component name="PropertiesComponent"><![CDATA[{
   "keyToString": {
     "ModuleVcsDetector.initialDetectionPerformed": "true",
+<<<<<<< Updated upstream
     "RunOnceActivity.ShowReadmeOnStart": "true",
     "RunOnceActivity.git.unshallow": "true",
     "RunOnceActivity.typescript.service.memoryLimit.init": "true",
     "git-widget-placeholder": "dev",
+=======
+    "Python.cosine_similarity_check.executor": "Debug",
+    "Python.debug_training.executor": "Run",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.git.unshallow": "true",
+    "RunOnceActivity.typescript.service.memoryLimit.init": "true",
+    "git-widget-placeholder": "dev-updated-model",
+>>>>>>> Stashed changes
     "last_opened_file_path": "F:/myvit/src/myvit",
     "nodejs_package_manager_path": "npm",
     "vue.rearranger.settings.migration": "true"
@@ -55,10 +68,40 @@
       <option name="presentableId" value="Default" />
       <updated>1788361965626</updated>
       <workItem from="1788361966692" duration="29000" />
+<<<<<<< Updated upstream
+=======
+      <workItem from="1788427745361" duration="4785000" />
+      <workItem from="1788453908631" duration="1095000" />
+      <workItem from="1788496352139" duration="5000" />
+      <workItem from="1788496370283" duration="1476000" />
+>>>>>>> Stashed changes
     </task>
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
     <option name="version" value="3" />
   </component>
+<<<<<<< Updated upstream
+=======
+  <component name="XDebuggerManager">
+    <breakpoint-manager>
+      <breakpoints>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/models/updated_vit.py</url>
+          <line>120</line>
+          <option name="timeStamp" value="1" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/cosine_similarity_check.py</url>
+          <line>34</line>
+          <option name="timeStamp" value="2" />
+        </line-breakpoint>
+      </breakpoints>
+    </breakpoint-manager>
+  </component>
+  <component name="com.intellij.coverage.CoverageDataManagerImpl">
+    <SUITE FILE_PATH="coverage/myvit$debug_training.coverage" NAME="debug_training Coverage Results" MODIFIED="1788496401545" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/myvit$cosine_similarity_check.coverage" NAME="cosine_similarity_check Coverage Results" MODIFIED="1788431570474" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+  </component>
+>>>>>>> Stashed changes
 </project>
