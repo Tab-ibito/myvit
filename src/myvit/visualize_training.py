@@ -65,7 +65,7 @@ def load_metrics_history(path: str | Path) -> list[dict[str, Any]]:
             records.append(record)
 
     if not records:
-        raise ValueError(f"训练指标文件为空：{history_path}")
+         raise ValueError(f"训练指标文件为空：{history_path}")
     return sorted(records, key=lambda record: int(record["epoch"]))
 
 
@@ -162,6 +162,8 @@ def save_training_figure(
 
     epochs = [int(record["epoch"]) for record in records]
     train_loss = _nested_metric(records, "train", "loss")
+    train_objective_loss = _nested_metric(records, "train", "objective_loss")
+    orthogonality_loss = _nested_metric(records, "train", "orthogonality_loss")
     validation_loss = _nested_metric(records, "validation", "loss")
     train_top1 = _nested_metric(records, "train", "top1")
     validation_top1 = _nested_metric(records, "validation", "top1")
@@ -175,9 +177,23 @@ def save_training_figure(
     figure.suptitle(title, fontsize=15)
 
     loss_axis = axes[0, 0]
-    loss_axis.plot(epochs, train_loss, marker="o", label="Train loss")
-    loss_axis.plot(epochs, validation_loss, marker="o", label="Validation loss")
-    _finish_axis(loss_axis, "Loss", "Cross-entropy loss")
+    loss_axis.plot(epochs, train_loss, marker="o", label="Train classification")
+    loss_axis.plot(epochs, validation_loss, marker="o", label="Validation classification")
+    if any(value is not None for value in train_objective_loss):
+        loss_axis.plot(
+            epochs,
+            train_objective_loss,
+            linestyle="--",
+            label="Train objective",
+        )
+    if any(value is not None for value in orthogonality_loss):
+        loss_axis.plot(
+            epochs,
+            orthogonality_loss,
+            linestyle=":",
+            label="CLS orthogonality",
+        )
+    _finish_axis(loss_axis, "Loss", "Loss")
 
     accuracy_axis = axes[0, 1]
     accuracy_axis.plot(epochs, train_top1, marker="o", label="Train Top-1")

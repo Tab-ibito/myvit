@@ -17,8 +17,10 @@ from torch import Tensor
 class EpochMetrics:
     """一个 epoch 结束后的汇总指标。
 
-    ``loss`` 是每个样本的平均交叉熵；``top1`` 和 ``top5`` 使用百分数，
-    因而 75.2 表示 75.2%，而不是 0.752。
+    ``loss`` 是每个样本的平均分类损失；``top1`` 和 ``top5`` 使用百分数，
+    因而 75.2 表示 75.2%，而不是 0.752。训练中若加入正则项，
+    ``objective_loss`` 是实际反向传播的总损失，``orthogonality_loss`` 是尚未
+    乘 lambda 的正交损失；验证阶段这两项保持为 None。
     """
 
     # 验证阶段没有学习率和梯度，因此后两项允许为 None。
@@ -28,6 +30,8 @@ class EpochMetrics:
     samples: int
     learning_rate: float | None = None
     gradient_norm: float | None = None
+    objective_loss: float | None = None
+    orthogonality_loss: float | None = None
 
     def to_dict(self) -> dict[str, float | int | None]:
         """转换为可直接写入 checkpoint 或 JSON 日志的字典。"""
@@ -106,6 +110,8 @@ class ClassificationMetricTracker:
         *,
         learning_rate: float | None = None,
         gradient_norm: float | None = None,
+        objective_loss: float | None = None,
+        orthogonality_loss: float | None = None,
     ) -> EpochMetrics:
         """计算当前累计结果；空 DataLoader 会被视为配置错误。"""
 
@@ -120,6 +126,8 @@ class ClassificationMetricTracker:
             samples=self.samples,
             learning_rate=learning_rate,
             gradient_norm=gradient_norm,
+            objective_loss=objective_loss,
+            orthogonality_loss=orthogonality_loss,
         )
 
 

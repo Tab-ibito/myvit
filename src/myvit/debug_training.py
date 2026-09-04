@@ -21,6 +21,7 @@ from myvit.engine import evaluate, train_one_epoch
 from myvit.metrics import EpochMetrics
 from myvit.models import VisionTransformer
 from myvit.tiny_training import create_tiny_model
+from myvit.updated_training import create_updated_model
 from myvit.data.imagenette import create_imagenette_datasets
 
 
@@ -94,10 +95,11 @@ def format_epoch_line(
     train_metrics: EpochMetrics,
     validation_metrics: EpochMetrics,
     best_top1: float,
+    cls_token_weights: list[float] | None = None,
 ) -> str:
     """生成适合终端阅读的一行训练日志。"""
 
-    return (
+    line = (
         f"epoch={epoch:03d} "
         f"train_loss={train_metrics.loss:.4f} train_top1={train_metrics.top1:6.2f}% "
         f"val_loss={validation_metrics.loss:.4f} val_top1={validation_metrics.top1:6.2f}% "
@@ -105,6 +107,15 @@ def format_epoch_line(
         f"grad_norm={train_metrics.gradient_norm:.3f} "
         f"best_val_top1={best_top1:6.2f}%"
     )
+    if train_metrics.orthogonality_loss is not None:
+        line += (
+            f" objective_loss={train_metrics.objective_loss:.4f}"
+            f" orth_loss={train_metrics.orthogonality_loss:.4f}"
+        )
+    if cls_token_weights is not None:
+        formatted_weights = ",".join(f"{weight:.4f}" for weight in cls_token_weights)
+        line += f" cls_weights=[{formatted_weights}]"
+    return line
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -116,6 +127,13 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--output-dir", type=Path, default=Path("outputs/debug"))
     parser.add_argument("--resume", type=Path)
     parser.add_argument("--tiny", action="store_true")
+    parser.add_argument("--updated", action="store_true")
+    parser.add_argument(
+        "--orthogonality-lambda",
+        type=float,
+        default=0.01,
+        help="三 CLS 最终表征正交损失的系数（仅 --updated 生效）",
+    )
     parser.add_argument(
         "--stop-after-epoch",
         type=int,
@@ -127,13 +145,26 @@ def build_parser() -> argparse.ArgumentParser:
 def main() -> None:
     args = build_parser().parse_args()
     set_random_seed(args.seed)
-
     # 自动优先使用 CUDA；本调试任务也应能在没有显卡的开发电脑上完成。
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print("cuda_available: ", torch.cuda.is_available())
 
     if args.tiny is True: # 使用 Tiny Training 跑 Imagenette2 （第三部分）
         model = create_tiny_model().to(device)
+        train_dataset, validation_dataset = create_imagenette_datasets(Path("../../data/imagenette2-320"))
+        train_loader = DataLoader(
+            train_dataset,
+            batch_size=args.batch_size,
+            shuffle=True,
+        )
+        validation_loader = DataLoader(
+            validation_dataset,
+            batch_size=args.batch_size,
+        )
+    elif args.updated is True:
+        model = create_updated_model(
+            orthogonality_lambda=args.orthogonality_lambda,
+        ).to(device)
         train_dataset, validation_dataset = create_imagenette_datasets(Path("../../data/imagenette2-320"))
         train_loader = DataLoader(
             train_dataset,
@@ -167,10 +198,12 @@ def main() -> None:
 
     # T_max 表示余弦曲线从初始学习率衰减到最低点所经历的 epoch 数。
     # scheduler.step() 每个 epoch 调用一次，因此这里设置为总 epoch 数。
-    scheduler = torch.optim.lr_scheduler.StepLR(
-        optimizer,
-        args.epochs,
-    )
+    # 前5轮 warmup 采用scheduler1，后面采用余弦衰减
+    scheduler1 = torch.optim.lr_scheduler.StepLR(optimizer, 5)
+
+    scheduler2 = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=max(1, args.epochs-5))
+
+    scheduler = torch.optim.lr_scheduler.SequentialLR(optimizer, schedulers=[scheduler1, scheduler2], milestones=[5])
 
     # -inf 保证一个全新的实验在第一轮结束后一定会生成 best.pt。
     start_epoch = 0
@@ -229,6 +262,19 @@ def main() -> None:
             "train": train_metrics.to_dict(),
             "validation": validation_metrics.to_dict(),
         }
+        cls_token_weights = None
+        weights_method = getattr(model, "cls_token_weights", None)
+        if callable(weights_method):
+            # 将每轮学到的融合权重写入日志和 checkpoint，便于判断权重是否塌缩。
+            cls_token_weights = (
+                weights_method().detach().cpu().tolist()
+            )
+            metrics["model"] = {
+                "cls_token_weights": cls_token_weights,
+                "orthogonality_lambda": float(
+                    getattr(model, "orthogonality_lambda", 0.0)
+                ),
+            }
 
         # 先推进调度器再保存，保证恢复后的学习率与不中断训练完全一致。
         scheduler.step()
@@ -242,7 +288,12 @@ def main() -> None:
             epoch=epoch,
             metrics=metrics,
             best_metric=best_top1,
-            extra={"seed": args.seed},
+            extra={
+                "seed": args.seed,
+                "orthogonality_lambda": (
+                    args.orthogonality_lambda if args.updated else 0.0
+                ),
+            },
         )
         if is_best:
             save_checkpoint(
@@ -253,7 +304,12 @@ def main() -> None:
                 epoch=epoch,
                 metrics=metrics,
                 best_metric=best_top1,
-                extra={"seed": args.seed},
+                extra={
+                    "seed": args.seed,
+                    "orthogonality_lambda": (
+                        args.orthogonality_lambda if args.updated else 0.0
+                    ),
+                },
             )
 
         # JSONL 每行是一个独立 JSON 对象。即使 checkpoint 被覆盖，完整曲线仍会保留。
@@ -266,7 +322,15 @@ def main() -> None:
                 + "\n"
             )
 
-        print(format_epoch_line(epoch, train_metrics, validation_metrics, best_top1))
+        print(
+            format_epoch_line(
+                epoch,
+                train_metrics,
+                validation_metrics,
+                best_top1,
+                cls_token_weights,
+            )
+        )
 
     print(f"device={device} checkpoints={args.output_dir.resolve()}")
 

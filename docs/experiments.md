@@ -73,3 +73,19 @@ def create_tiny_model() -> VisionTransformer:
 改为 `1e-4` 后达到了 67.57% 的效果。通过调参过程可以知道，**学习率大小是一个重要因素**。
 
 ![alt text](training_curves-1.png)
+
+改为50轮次，前5轮采用固定步长 Warmup, 后45轮用余弦衰减；在43轮时得到最优结果 77.38%。
+
+## 4. 尝试对照实验
+
+![alt text](training_curves-2.png)
+
+设置了3个 CLS-Tokens，结果取平均；得到的结果是76.74%，结论：并没有显著增强。
+
+设置断点检查输出时的余弦相似度
+
+```Python
+torch.cosine_similarity(tokens[0], tokens[1])
+```
+
+得到 `0.8904` `0.9012` `0.7947` （两两之间），这说明三个 Token 的判断方向趋同。

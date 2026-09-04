@@ -24,6 +24,7 @@ def train_one_epoch(
     scaler: torch.cuda.amp.GradScaler | None = None,
     use_amp: bool = False,
     max_gradient_norm: float | None = None,
+    orthogonality_lambda: float | None = None,
 ) -> EpochMetrics:
     """训练一个 epoch，并返回按样本汇总的指标。
 
@@ -36,6 +37,8 @@ def train_one_epoch(
         scaler: 使用 CUDA AMP 时传入同一个 GradScaler，并保存进 checkpoint。
         use_amp: 仅 CUDA 下启用 FP16 自动混合精度。
         max_gradient_norm: 若非空，在 optimizer.step 前裁剪全局梯度范数。
+        orthogonality_lambda: 三 CLS 正交损失的系数。None 表示读取模型自身的
+            ``orthogonality_lambda``；普通模型没有该属性时等价于 0。
     """
 
     if use_amp and device.type != "cuda":
@@ -45,11 +48,35 @@ def train_one_epoch(
     if max_gradient_norm is not None and max_gradient_norm <= 0:
         raise ValueError("max_gradient_norm 必须大于 0")
 
+    if orthogonality_lambda is None:
+        # UpdatedVisionTransformer 默认提供 0.01；普通单 CLS 模型没有此属性，
+        # 因而继续使用原来的纯分类损失训练路径。
+        orthogonality_lambda = float(
+            getattr(model, "orthogonality_lambda", 0.0)
+        )
+    if orthogonality_lambda < 0:
+        raise ValueError("orthogonality_lambda 不能小于 0")
+
+    regularized_forward = None
+    if orthogonality_lambda > 0:
+        regularized_forward = getattr(
+            model,
+            "forward_with_orthogonality_loss",
+            None,
+        )
+        if not callable(regularized_forward):
+            raise TypeError(
+                "orthogonality_lambda > 0 时，模型必须实现 "
+                "forward_with_orthogonality_loss(images)"
+            )
+
     # train() 会启用 Dropout/DropPath 等训练行为；它不会自动启用梯度，
     # 梯度是否记录由 PyTorch 当前上下文和 requires_grad 决定。
     model.train()
     tracker = ClassificationMetricTracker()
     gradient_norm_sum = 0.0
+    objective_loss_sum = 0.0
+    orthogonality_loss_sum = 0.0
     steps = 0
 
     for images, targets in data_loader:
@@ -68,15 +95,27 @@ def train_one_epoch(
             dtype=torch.float16,
             enabled=use_amp,
         ):
-            logits = model(images)
-            loss = criterion(logits, targets)
+            if regularized_forward is None:
+                logits = model(images)
+                classification_loss = criterion(logits, targets)
+                orthogonality_loss = None
+                objective_loss = classification_loss
+            else:
+                logits, orthogonality_loss = regularized_forward(images)
+                classification_loss = criterion(logits, targets)
+                objective_loss = (
+                    classification_loss
+                    + orthogonality_lambda * orthogonality_loss
+                )
 
-        if not torch.isfinite(loss):
-            raise FloatingPointError(f"训练 loss 出现非有限值：{loss.item()}")
+        if not torch.isfinite(objective_loss):
+            raise FloatingPointError(
+                f"训练 objective loss 出现非有限值：{objective_loss.item()}"
+            )
 
         if scaler is not None and use_amp:
             # FP16 的数值范围较小。GradScaler 先放大 loss，避免很小的梯度下溢为 0。
-            scaler.scale(loss).backward()
+            scaler.scale(objective_loss).backward()
 
             # 梯度裁剪和梯度范数统计必须基于反缩放后的真实梯度。
             scaler.unscale_(optimizer)
@@ -93,14 +132,22 @@ def train_one_epoch(
             scaler.update()
         else:
             # 普通 FP32 路径不需要 loss scaling，反向传播后可直接统计/裁剪梯度。
-            loss.backward()
+            objective_loss.backward()
             gradient_norm = parameters_gradient_norm(model.parameters())
             if max_gradient_norm is not None:
                 nn.utils.clip_grad_norm_(model.parameters(), max_gradient_norm)
             optimizer.step()
 
         # 指标不参与训练，所以 detach logits，防止 tracker 延长计算图生命周期。
-        tracker.update(loss, logits.detach(), targets)
+        # loss 字段继续记录分类损失，使它能与验证集分类损失直接比较；真正用于
+        # backward 的总目标和原始正交项分别记录在附加字段中。
+        tracker.update(classification_loss, logits.detach(), targets)
+        batch_size = targets.shape[0]
+        objective_loss_sum += float(objective_loss.detach().item()) * batch_size
+        if orthogonality_loss is not None:
+            orthogonality_loss_sum += (
+                float(orthogonality_loss.detach().item()) * batch_size
+            )
         gradient_norm_sum += gradient_norm
         steps += 1
 
@@ -113,4 +160,10 @@ def train_one_epoch(
     return tracker.compute(
         learning_rate=learning_rate,
         gradient_norm=average_gradient_norm,
+        objective_loss=objective_loss_sum / tracker.samples,
+        orthogonality_loss=(
+            orthogonality_loss_sum / tracker.samples
+            if regularized_forward is not None
+            else None
+        ),
     )

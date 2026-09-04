@@ -8,6 +8,9 @@ from .vit import (
     count_trainable_parameters,
     vit_tiny_patch16_224,
 )
+from .updated_vit import (
+    UpdatedVisionTransformer,
+)
 
 __all__ = [
     "MultiHeadSelfAttention",
@@ -16,4 +19,5 @@ __all__ = [
     "VisionTransformer",
     "count_trainable_parameters",
     "vit_tiny_patch16_224",
+    "UpdatedVisionTransformer",
 ]
