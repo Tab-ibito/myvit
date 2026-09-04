@@ -72,7 +72,6 @@ def create_tiny_model() -> VisionTransformer:
 
 改为 `1e-4` 后达到了 67.57% 的效果。通过调参过程可以知道，**学习率大小是一个重要因素**。
 
-![alt text](training_curves-1.png)<<<<<<< Updated upstream
 ![alt text](training_curves-1.png)
 =======
 ![alt text](training_curves-1.png)
