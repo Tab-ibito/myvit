@@ -95,3 +95,11 @@ torch.cosine_similarity(tokens[0], tokens[1])
 ![alt text](training_curves-3.png)
 
 仍然没有明显提升。
+
+## 5. 结论
+
+首先搭建了小规模模型，并尝试在 Imagenette-320 上训练，通过调整学习率，改变Scheduler策略等方法优化调参。
+
+在此基础上尝试了优化模型训练的方法：加大 cls-tokens 的规模，并尝试加入正交惩罚项，尝试控制权值可学习。结论上并没有得到性能的显著提升。
+
+但是以尝试学习性质的前提下，本实验的示例与参考目的已经达到。
