@@ -12,6 +12,7 @@ import random
 from pathlib import Path
 
 import torch
+from fontTools.ttLib.tables.otTables import DeltaSetIndexMap
 from torch import Tensor, nn
 from torch.utils.data import DataLoader, TensorDataset
 
@@ -19,6 +20,8 @@ from myvit.checkpoint import load_checkpoint, save_checkpoint
 from myvit.engine import evaluate, train_one_epoch
 from myvit.metrics import EpochMetrics
 from myvit.models import VisionTransformer
+from myvit.tiny_training import create_tiny_model
+from myvit.data.imagenette import create_imagenette_datasets
 
 
 def set_random_seed(seed: int) -> None:
@@ -112,6 +115,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--seed", type=int, default=7)
     parser.add_argument("--output-dir", type=Path, default=Path("outputs/debug"))
     parser.add_argument("--resume", type=Path)
+    parser.add_argument("--tiny", action="store_true")
     parser.add_argument(
         "--stop-after-epoch",
         type=int,
@@ -126,30 +130,46 @@ def main() -> None:
 
     # 自动优先使用 CUDA；本调试任务也应能在没有显卡的开发电脑上完成。
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    model = create_debug_model().to(device)
-    criterion = nn.CrossEntropyLoss()
+    print("cuda_available: ", torch.cuda.is_available())
+
+    if args.tiny is True: # 使用 Tiny Training 跑 Imagenette2 （第三部分）
+        model = create_tiny_model().to(device)
+        train_dataset, validation_dataset = create_imagenette_datasets(Path("../../data/imagenette2-320"))
+        train_loader = DataLoader(
+            train_dataset,
+            batch_size=args.batch_size,
+            shuffle=True,
+        )
+        validation_loader = DataLoader(
+            validation_dataset,
+            batch_size=args.batch_size,
+        )
+    else: # 之前的 Debug 模式 （第二部分）
+        model = create_debug_model().to(device)
+        # 训练集需要 shuffle，避免每轮都按相同类别顺序更新参数。
+        train_loader = DataLoader(
+            make_pattern_dataset(64, seed=args.seed),
+            batch_size=args.batch_size,
+            shuffle=True,
+        )
+        # 验证集使用不同随机种子生成独立噪声，但类别规律相同；不 shuffle 便于复现。
+        validation_loader = DataLoader(
+            make_pattern_dataset(32, seed=args.seed + 1),
+            batch_size=args.batch_size,
+        )
+
+    criterion = nn.CrossEntropyLoss() # Loss 使用交叉熵损失
     optimizer = torch.optim.AdamW(
         model.parameters(),
         lr=args.learning_rate,
         weight_decay=0.01,
     )
+
     # T_max 表示余弦曲线从初始学习率衰减到最低点所经历的 epoch 数。
     # scheduler.step() 每个 epoch 调用一次，因此这里设置为总 epoch 数。
-    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
+    scheduler = torch.optim.lr_scheduler.StepLR(
         optimizer,
-        T_max=max(args.epochs, 1),
-    )
-
-    # 训练集需要 shuffle，避免每轮都按相同类别顺序更新参数。
-    train_loader = DataLoader(
-        make_pattern_dataset(64, seed=args.seed),
-        batch_size=args.batch_size,
-        shuffle=True,
-    )
-    # 验证集使用不同随机种子生成独立噪声，但类别规律相同；不 shuffle 便于复现。
-    validation_loader = DataLoader(
-        make_pattern_dataset(32, seed=args.seed + 1),
-        batch_size=args.batch_size,
+        args.epochs,
     )
 
     # -inf 保证一个全新的实验在第一轮结束后一定会生成 best.pt。
@@ -185,6 +205,7 @@ def main() -> None:
         end_epoch = min(end_epoch, args.stop_after_epoch + 1)
 
     for epoch in range(start_epoch, end_epoch):
+        print(f"epoch {epoch} start")
         train_metrics = train_one_epoch(
             model,
             train_loader,

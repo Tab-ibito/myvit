@@ -9,16 +9,22 @@ description = "A small, educational Vision Transformer implementation."
 requires-python = ">=3.10"
 dependencies = [
     "torch>=2.2",
+    "torchvision>=0.17",
 ]
 
 [project.optional-dependencies]
 test = [
     "pytest>=8.0",
 ]
+visualization = [
+    "matplotlib>=3.8",
+]
 
 [project.scripts]
 myvit-train-debug = "myvit.debug_training:main"
 myvit-inspect-checkpoint = "myvit.inspect_checkpoint:main"
+myvit-inspect-data = "myvit.inspect_data:main"
+myvit-visualize-training = "myvit.visualize_training:main"
 
 [tool.pytest.ini_options]
 pythonpath = ["src"]
