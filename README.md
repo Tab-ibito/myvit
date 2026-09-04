@@ -88,3 +88,15 @@ $env:PYTHONPATH = 'F:\myvit\src'
 
 训练指标和 checkpoint 的详细解释见
 [`docs/training-metrics-and-checkpoints.md`](docs/training-metrics-and-checkpoints.md)。
+
+## What I Have Learned
+
+从本项目学习了：
+- 如何与 AI 合作，将 Agent 融入工作流进行开发和学习
+  - 本项目在 ChatGPT 5.6-Sol 协助下完成。
+- Vision Transformer 的基本原理，并尝试一些优化模型的思路。
+- 云端服务器算力的使用
+- 模型训练的基本方法，如何调参，如何看指标，如何可视化
+- 熟悉科研实验的一些操作方式，希望可以降低初次科研上手难度
+
+实验详情见 [`docs/experiments.md`](docs/experiments.md)。
